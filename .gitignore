@@ -1,0 +1,298 @@
+
+# ============================================================
+# 1. ENVIRONMENT VARIABLES & SECRETS
+# ============================================================
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+secrets/
+.secret/
+credentials.json
+service-account*.json
+*-credentials.json
+
+# ============================================================
+# 2. PYTHON / FASTAPI
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.so
+
+# Python build and distribution
+build/
+dist/
+wheels/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+share/python-wheels/
+
+# Python packaging
+.python-version
+MANIFEST
+installed-files.txt
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+virtualenv/
+venv.bak/
+env.bak/
+
+# Python REPL
+.python_history
+.pythonrc
+
+# Type checking and linting
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+.ruff_cache/
+.pyright/
+.pylint.d/
+
+# Testing and coverage
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+nosetests.xml
+test-results/
+junit.xml
+*.cover
+
+# Documentation builds
+docs/_build/
+site/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# ============================================================
+# 3. FASTAPI / ASGI / APPLICATION RUNTIME
+# ============================================================
+*.log
+logs/
+log/
+uvicorn.log
+gunicorn.log
+celerybeat-schedule
+celerybeat.pid
+
+# Runtime files
+*.pid
+*.sock
+*.tmp
+*.temp
+
+# ============================================================
+# 4. NODE.JS / REACT / VITE FRONTEND
+# ============================================================
+node_modules/
+jspm_packages/
+bower_components/
+
+# Frontend build output
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+.angular/
+.parcel-cache/
+.turbo/
+.vercel/
+.netlify/
+
+# Vite
+vite.config.*.timestamp-*
+vite.config.*.mjs.timestamp-*
+
+# React and framework caches
+.eslintcache
+.stylelintcache
+.cache/
+.npm/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.pnpm-store/
+
+# Package manager debug logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+rush-debug.log*
+
+# Local package manager configuration
+.npmrc.local
+.yarnrc.local
+
+# ============================================================
+# 5. TYPESCRIPT / JAVASCRIPT TOOLING
+# ============================================================
+*.tsbuildinfo
+*.map
+
+# Keep source maps if intentionally required for debugging
+# Remove the *.map rule above if you need to commit source maps.
+
+# ============================================================
+# 6. FRONTEND TESTS
+# ============================================================
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+cypress/videos/
+cypress/screenshots/
+storybook-static/
+
+# ============================================================
+# 7. DATABASES / LOCAL DATA / UPLOADS
+# ============================================================
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# Local database exports and dumps
+*.dump
+*.bak
+*.backup
+*.sql.gz
+
+# Generated or user-uploaded data
+uploads/
+user_uploads/
+media/
+tmp/
+temp/
+data/generated/
+storage/
+
+# ============================================================
+# 8. DOCKER / LOCAL INFRASTRUCTURE
+# ============================================================
+# Local overrides only; keep the base configuration tracked
+docker-compose.override.yml
+docker-compose.*.override.yml
+.env.docker
+
+# ============================================================
+# 9. IDEs / EDITORS
+# ============================================================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+.idea/
+*.iml
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ============================================================
+# 10. OPERATING SYSTEM FILES
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+$RECYCLE.BIN/
+
+# ============================================================
+# 11. GENERATED REPORTS / PROFILING
+# ============================================================
+*.prof
+*.lprof
+*.ps
+*.out
+*.trace
+*.stackdump
+*.core
+core
+report.html
+
+# ============================================================
+# 12. CERTIFICATES / TLS / LOCAL KEYS
+# ============================================================
+certs/
+certificates/
+*.csr
+*.jks
+*.keystore
+
+# ============================================================
+# 13. CLOUD / DEPLOYMENT LOCAL STATE
+# ============================================================
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Serverless local artifacts
+.serverless/
+.aws-sam/
+
+# ============================================================
+# 14. GENERATED ASSETS / LOCAL ARTIFACTS
+# ============================================================
+artifacts/
+generated/
+.cache-loader/
+.eslintcache
+.parcel-cache/
+
+# ============================================================
+# 15. LOCAL CONFIGURATION
+# ============================================================
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ============================================================
+# 16. OPTIONAL LOCAL TOOL DATA
+# ============================================================
+.cursor/
+.history/
+.direnv/
