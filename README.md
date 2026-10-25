@@ -152,7 +152,7 @@ From the repository root:
 docker compose up --build
 ```
 
-The backend is published on port 8000. Compose uses `backend/.env.example` for non-secret settings and checks `/api/v1/health`. The frontend image serves the built UI on port 8080 and proxies `/api` to the backend container.
+The backend is published on port 8000. Compose uses `backend/.env.example` for non-secret settings and checks `/api/v1/health`. The frontend image serves the built UI on port 8080 and proxies `/api` to the backend container. Outside Compose, the frontend image defaults to proxying `/api` to `https://wind-energy-forecasting-2c1x.onrender.com`; set `API_UPSTREAM` to change the API origin.
 
 ## Frontend
 
@@ -164,13 +164,13 @@ npm install
 npm run dev
 ```
 
-The app is at `http://127.0.0.1:5173`. Vite proxies `/api` to `http://127.0.0.1:8000`. Copy `frontend/.env.example` to `frontend/.env` if you need to change the API base URL.
+The app is at `http://127.0.0.1:5173`. Vite proxies `/api` to the Render backend. Copy `frontend/.env.example` to `frontend/.env` if you need to change the API base URL.
 
 ```dotenv
 VITE_API_BASE_URL=/api/v1
 ```
 
-Leave that value relative for local development and for the Compose nginx proxy. If the browser calls the backend on another origin, set `VITE_API_BASE_URL` to that origin plus `/api/v1`, and set `CORS_ORIGINS` on the backend to the frontend origin. An empty `CORS_ORIGINS` leaves cross-origin requests disabled.
+Leave that value relative. The Vite development proxy forwards API requests to the Render backend, and the production nginx proxy forwards them server-side, avoiding browser CORS requirements. Docker Compose routes to its local backend container.
 
 ```bash
 cd frontend
