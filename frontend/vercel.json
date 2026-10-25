@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://wind-energy-forecasting-2c1x.onrender.com/api/$1"
+    }
+  ]
+}

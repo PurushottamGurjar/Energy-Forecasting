@@ -25,3 +25,5 @@ docker compose up --build
 ```
 
 The UI is then on port 8080.
+
+For Vercel, set the project Root Directory to `frontend`. The `vercel.json` rewrite forwards `/api/...` requests to the Render backend, so the browser continues to call the same-origin `/api/v1` path.
