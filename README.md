@@ -1,124 +1,274 @@
 # UK Wind Forecast Accuracy Dashboard
 
-Backend for reviewing Great Britain wind generation forecasts before a day-ahead procurement decision. It loads actual wind generation and historical forecast versions from the Elexon Insights API, keeps the version that had been published at a chosen cutoff, and reports MAE, RMSE, bias, and MAPE.
+Wind Intelligence is a dashboard for evaluating Great Britain’s wind generation forecasts against actual generation before a day-ahead procurement decision. The application combines a frontend dashboard with a Python backend that retrieves historical forecast versions and actual generation data from the Elexon Insights API.
 
-The `frontend/` directory is the Wind Intelligence dashboard. It reads the forecast and accuracy APIs. It does not recalculate MAE, RMSE, bias, or MAPE.
+The project focuses on forecast accuracy, historical forecast selection, and hourly comparisons using MAE, RMSE, bias, and MAPE.
 
-This backend was built with assistance from Cursor's AI coding agent (Grok).
+## Frontend — Wind Intelligence Dashboard
+Link: https://windee-forecast.vercel.app/
 
-## What the API does
+<img width="1637" height="972" alt="image" src="https://github.com/user-attachments/assets/2bba8636-8779-419d-a3b5-a9a8321adaf2" />
 
-A request names a **delivery date** and a **decision time**. The delivery date is the day whose 24 hourly periods are being evaluated. The decision time is the moment the forecast must have been known. A decision on one day can apply to delivery on the next day. The API does not invent a market gate-closure time.
+<img width="1560" height="967" alt="image" src="https://github.com/user-attachments/assets/6a8e463b-2d8c-4a40-8fac-6f6d5e4239b8" />
 
-For each delivery hour it:
 
-1. Loads WINDFOR versions published in a lookback window that ends at the decision time.
-2. Drops anything published after that cutoff, so later revisions cannot leak into the result.
-3. Keeps the latest remaining `publishTime` for that hourly `startTime`. If two rows share a publish time, the later row in the Elexon payload wins.
-4. Compares that forecast with the hourly FUELHH wind actual. FUELHH is half-hourly, so the two settlement periods inside the hour are averaged into one value.
 
-Missing forecasts and missing actuals stay `null`. They are never replaced with zero.
+The frontend provides the dashboard interface for reviewing wind generation forecasts and their accuracy for a selected delivery date and decision time.
 
-## Confirmed data sources
+### Features
 
-Base URL: `https://data.elexon.co.uk/bmrs/api/v1`
+- **Forecast visualization:** Review hourly wind generation forecasts for the selected delivery day.
+- **Forecast accuracy:** Display MAE, RMSE, bias, and MAPE calculated by the backend.
+- **Actual generation comparison:** Compare forecast values against observed wind generation.
+- **Historical forecast selection:** View forecasts that were available at the specified decision cutoff, excluding later revisions.
+- **Missing data handling:** Preserve unavailable forecast and actual values rather than treating them as zero.
+- **API integration:** Retrieve forecast and accuracy data through the backend REST API.
 
-| Data | Endpoint | Filters used |
-| --- | --- | --- |
-| Actual wind generation | [`GET /datasets/FUELHH/stream`](https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/FUELHH/stream) | `settlementDateFrom`, `settlementDateTo`, `fuelType=WIND` |
-| Forecast versions | [`GET /datasets/WINDFOR/stream`](https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/WINDFOR/stream) | `publishDateTimeFrom`, `publishDateTimeTo` |
+The frontend does not calculate forecast accuracy metrics. All forecast selection, actual-generation processing, and metric calculations are handled by the backend.
 
-FUELHH settlement-date filters cannot be combined with publish-time filters. The stream responses are JSON arrays.
+### Technology Stack
 
-WINDFOR without a publish window returns only the latest snapshot. That snapshot is not used, because it includes revisions made after the decision. [`/forecast/generation/wind/latest`](https://bmrs.elexon.co.uk/api-documentation/endpoint/forecast/generation/wind/latest) has the same limitation. [`/forecast/generation/wind/evolution`](https://bmrs.elexon.co.uk/api-documentation/endpoint/forecast/generation/wind/evolution) can show the history of one `startTime`, and it was used to check the client, but a full day is loaded from the stream in one request.
+- React
+- Vite
+- JavaScript
+- React Query
+- Nginx for production serving and reverse proxying
+- Docker for containerized deployment
 
-Checked live for delivery `2026-01-15T10:00:00Z` and cutoff `2026-01-14T13:00:00Z`:
+### Run Locally
 
-- Eligible forecast: published `2026-01-14T11:30:00Z`, `12362` MW.
-- The `2026-01-14T15:30:00Z` revision (`13340` MW) is after the cutoff and is excluded.
-- Half-hour actuals at `10:00Z` and `10:30Z` are `9807` MW and `11303` MW. The API returns their average, `10555` MW.
+Requirements: a current Node.js release and npm.
 
-## Assumptions
-
-- The analysis scope is **delivery** in January 2026 (`2026-01-01` through `2026-01-31`), not the date of the decision. A cutoff on 31 Dec 2025 is valid for delivery on 1 Jan 2026.
-- January 2026 is GMT, so the UTC calendar date matches the Elexon settlement date. The API returns 24 hourly periods. There is no clock change in this month.
-- `decision_time` is required and must include a timezone. It is normalized to UTC. The value `DEFAULT_DECISION_CUTOFF_UTC=13:00` is a pilot example for documentation: delivery date D is often reviewed at 13:00 UTC on D-1. It is not an official market rule, and the API does not fill it in when the query omits it.
-- WINDFOR rows for this dataset are hourly, and the API returns only those 24 hours. A forecast that does not start on the hour is ignored.
-- FUELHH wind actuals stay half-hourly upstream. Before they are returned, the two settlement periods in each clock hour are averaged. If only one of the two periods is present, that single reading is used. The averaged actual is aligned to the hour start (`HH:00`), which is the same `startTime` as the WINDFOR row.
-- Forecast history is requested from `decision_time` back `FORECAST_LOOKBACK_HOURS` (default 72). NESO publishes several times a day, and the wind forecast horizon is about two days, so this window contains the version that was current at a day-ahead cutoff.
-- MAPE ignores periods whose actual generation is below `MAPE_MIN_ACTUAL_MW` (default 1 MW). If none remain, `mape_percent` is `null`. `mape_observations` counts the periods that were used.
-- Bias is the mean signed error. A bias near zero does not show that the forecast was accurate, because overestimates and underestimates cancel. Use MAE and RMSE as well.
-- `error_mw = forecast_generation_mw - actual_generation_mw`. Positive means the forecast was too high.
-
-`GET /api/v1/accuracy/summary` is not implemented. The single-day forecast and accuracy endpoints are the supported API.
-
-## API
-
-All routes are under `/api/v1`.
-
-### `GET /health`
-
-```json
-{"status": "ok"}
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-### `GET /forecasts`
+The development server runs at:
 
-Query parameters:
+`http://localhost:5173`
 
-- `delivery_date` (required): `YYYY-MM-DD` in January 2026.
-- `decision_time` (required): timezone-aware ISO 8601 timestamp.
-- `include_actuals` (optional): `true` or `false`, default `false`.
+### Frontend Configuration
+
+The frontend uses `frontend/.env.example` for its API configuration.
+
+
+Keep the API base URL relative. During local development, Vite forwards `/api` requests to the configured backend. In production, Nginx forwards requests server-side, avoiding the need for direct browser-to-backend requests.
+
+To build the production frontend:
+
+```bash
+npm run build
+```
+
+---
+
+## Backend — Forecast Processing and Accuracy Analysis
+
+The backend retrieves actual wind generation and historical wind forecast versions from the Elexon Insights API. It selects the latest eligible forecast available at the requested decision time and compares it with the corresponding actual generation.
+
+### Core Responsibilities
+
+- Retrieve historical forecast versions and actual generation data.
+- Filter forecasts by their publication timestamps to prevent future information from affecting historical evaluations.
+- Select the latest eligible forecast for each delivery hour.
+- Convert half-hourly actual generation readings into hourly values.
+- Calculate forecast accuracy metrics.
+- Expose forecast and accuracy data through REST endpoints.
+- Handle upstream API errors, rate limits, timeouts, and invalid requests.
+
+### Technology Stack
+
+- Python 3.12
+- FastAPI
+- Uvicorn
+- HTTPX for HTTP requests
+- Pydantic for request validation and data models
+- Pytest for testing
+- Docker and Docker Compose
+
+## Data Sources
+
+The backend uses the Elexon Insights API.
+
+**Base URL:** `https://data.elexon.co.uk/bmrs/api/v1`
+
+| Data | Endpoint | Purpose |
+|---|---|---|
+| Actual wind generation | `GET /datasets/FUELHH/stream` | Retrieve half-hourly wind generation readings using settlement-date and fuel-type filters. |
+| Historical wind forecasts | `GET /datasets/WINDFOR/stream` | Retrieve forecast versions using publication-time filters. |
+
+The backend uses historical forecast data rather than the latest forecast snapshot, because the latest snapshot can contain revisions published after the decision cutoff.
+
+The `/forecast/generation/wind/latest` endpoint has the same limitation. The `/forecast/generation/wind/evolution` endpoint can be used to inspect the history of an individual delivery period, while the stream endpoint provides the data needed for a full-day evaluation.
+
+## Forecast Selection and Processing
+
+Each request specifies a **delivery date** and a **decision time**.
+
+- **Delivery date:** The day whose 24 hourly periods are evaluated.
+- **Decision time:** The cutoff by which a forecast must have been published to qualify for the evaluation.
+
+For every delivery hour, the backend:
+
+1. Retrieves WINDFOR forecast versions from a configurable lookback window ending at the decision time.
+2. Excludes forecasts published after the decision cutoff.
+3. Selects the latest remaining `publishTime` for each hourly `startTime`. If multiple rows share a publication time, the later row in the Elexon response takes precedence.
+4. Retrieves the corresponding FUELHH wind generation readings.
+5. Averages the two half-hourly readings into an hourly actual value. If only one reading is available, that reading is used.
+6. Aligns the hourly actual value with the corresponding forecast hour.
+
+Missing forecasts and actual readings remain `null`. They are not replaced with zero, and missing data is not silently converted into a successful upstream response.
+
+## Forecast Accuracy Metrics
+
+The backend calculates accuracy metrics using only periods for which both forecast and actual values are available.
+
+| Metric | Description |
+|---|---|
+| MAE | Mean Absolute Error; measures the average absolute difference between forecast and actual generation. |
+| RMSE | Root Mean Squared Error; penalizes larger forecast errors more heavily. |
+| Bias | Mean signed error; indicates whether forecasts tend to overestimate or underestimate generation. |
+| MAPE | Mean Absolute Percentage Error; measures absolute error relative to actual generation, excluding periods below the configured minimum actual-generation threshold. |
+
+The signed error is defined as:
+
+`error_mw = forecast_generation_mw - actual_generation_mw`
+
+A positive error indicates an overestimate, while a negative error indicates an underestimate.
+
+A bias close to zero does not necessarily mean the forecast is accurate, because positive and negative errors can cancel each other out. MAE and RMSE should be considered alongside bias.
+
+MAPE excludes periods where actual generation is below `MAPE_MIN_ACTUAL_MW`, which defaults to 1 MW. If no eligible periods remain, `mape_percent` is `null`. The response includes `mape_observations` to indicate how many periods contributed to the MAPE calculation.
+
+## Historical Evaluation Assumptions
+
+- The supported analysis scope is delivery in January 2026, from `2026-01-01` through `2026-01-31`.
+- The evaluation returns 24 hourly delivery periods for a day.
+- January 2026 uses GMT, so UTC calendar dates align with the relevant Elexon settlement dates.
+- `decision_time` is required, must include a timezone, and is normalized to UTC.
+- `DEFAULT_DECISION_CUTOFF_UTC=13:00` is a configurable pilot example. It is not an official market rule and is not automatically applied when the request omits `decision_time`.
+- The default forecast lookback is 72 hours, configurable through `FORECAST_LOOKBACK_HOURS`.
+- Forecast rows that do not start on the hour are ignored.
+- Half-hourly FUELHH actuals are averaged before being returned as hourly readings.
+- A missing forecast or actual remains `null`.
+
+## API Reference
+
+All application endpoints are under `/api/v1`.
+
+### Health Check
+
+`GET /api/v1/health`
+
+Example response:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### Retrieve Forecasts
+
+`GET /api/v1/forecasts`
+
+**Query parameters**
+
+| Parameter | Required | Description |
+|---|---|---|
+| `delivery_date` | Yes | Delivery date in `YYYY-MM-DD` format, within January 2026. |
+| `decision_time` | Yes | Timezone-aware ISO 8601 timestamp. |
+| `include_actuals` | No | Include actual generation values; defaults to `false`. |
+
+Example:
 
 ```bash
 curl "http://localhost:8000/api/v1/forecasts?delivery_date=2026-01-15&decision_time=2026-01-14T13:00:00Z&include_actuals=true"
 ```
 
-`average_forecast_mw` is the mean of the forecasts that were found. It is `null` when none were published before the cutoff. An empty Elexon payload is still HTTP 200, with the missing periods counted. An upstream failure is not turned into an empty success.
+`average_forecast_mw` is the mean of the forecasts found for the requested delivery day. It is `null` if no eligible forecasts are available.
 
-### `GET /accuracy`
+An empty upstream data array is handled as a valid response with missing periods accounted for. Upstream failures are reported as errors rather than being treated as empty successful results.
 
-Same `delivery_date` and `decision_time` parameters. Actuals are always loaded.
+### Retrieve Forecast Accuracy
+
+`GET /api/v1/accuracy`
+
+Uses the same `delivery_date` and `decision_time` parameters. Actual generation is always retrieved for accuracy calculations.
+
+Example:
 
 ```bash
 curl "http://localhost:8000/api/v1/accuracy?delivery_date=2026-01-15&decision_time=2026-01-14T13:00:00Z"
 ```
 
-Metrics use only periods where both the forecast and the actual are present.
+Metrics are calculated only for delivery periods with both a forecast and an actual value.
 
-### Errors
+The accuracy endpoint evaluates one delivery day per request. Monthly accuracy trends and `GET /api/v1/accuracy/summary` are not implemented.
+
+### Error Handling
+
+Errors use a consistent response structure:
 
 ```json
-{"error": {"code": "validation_error", "message": "delivery_date: ..."}}
+{
+  "error": {
+    "code": "validation_error",
+    "message": "delivery_date: ..."
+  }
+}
 ```
 
-| Situation | Status | `code` |
-| --- | --- | --- |
+| Situation | HTTP status | Error code |
+|---|---:|---|
 | Invalid or out-of-range parameters | 422 | `validation_error` |
-| Elexon still rate limits after retries | 429 | `rate_limited` |
-| Elexon error, bad JSON, or connection failure | 502 | `upstream_unavailable` |
-| Elexon timeout | 504 | `upstream_timeout` |
+| Elexon continues rate-limiting after retries | 429 | `rate_limited` |
+| Elexon error, invalid JSON, or connection failure | 502 | `upstream_unavailable` |
+| Elexon request timeout | 504 | `upstream_timeout` |
 | Unexpected server error | 500 | `internal_error` |
 
-HTTP 429, 502, and 503 from Elexon are retried up to `ELEXON_MAX_RETRIES` times (default 3). A numeric `Retry-After` header is honored, capped at 10 seconds. Timeouts are not retried.
+HTTP 429, 502, and 503 responses from Elexon are retried up to `ELEXON_MAX_RETRIES` times, which defaults to 3. Numeric `Retry-After` headers are honored, with a maximum wait of 10 seconds. Timeouts are not retried.
 
-## Local setup
+## Local Backend Setup
 
-Python 3.12 is required.
+Requirements: Python 3.12.
 
 ```bash
 cd backend
 python -m venv .venv
-source .venv/Scripts/activate   # Windows
-# source .venv/bin/activate     # macOS or Linux
+```
+
+Activate the virtual environment.
+
+**Windows:**
+
+```bash
+.venv\Scripts\activate
+```
+
+**macOS / Linux:**
+
+```bash
+source .venv/bin/activate
+```
+
+Install dependencies and start the server:
+
+```bash
 pip install -r requirements.txt
-cp .env.example .env            # optional
+cp .env.example .env
 uvicorn app.main:app --reload
 ```
 
-The API listens on `http://127.0.0.1:8000`. Interactive docs are at `http://127.0.0.1:8000/docs`.
+The API is available at `http://127.0.0.1:8000`.
 
-Configuration is in [backend/.env.example](backend/.env.example):
+Interactive API documentation is available at `http://127.0.0.1:8000/docs`.
+
+### Backend Configuration
+
+Configuration is documented in `backend/.env.example`.
 
 ```dotenv
 ELEXON_BASE_URL=https://data.elexon.co.uk/bmrs/api/v1
@@ -128,66 +278,78 @@ FORECAST_LOOKBACK_HOURS=72
 MAPE_MIN_ACTUAL_MW=1
 ```
 
-## Tests
+## Testing
 
-From `backend/`:
+Run the backend test suite from the `backend/` directory:
 
 ```bash
 pytest
 ```
 
-The default run mocks Elexon. One live test is marked `integration` and is skipped unless you ask for it:
+The default test suite mocks Elexon responses. A separate integration test is marked `integration` and is skipped unless explicitly requested.
+
+Run the integration test with:
 
 ```bash
 pytest -m integration
 ```
 
-That test calls the public API for 15 January 2026 and checks the 10:00Z forecast/actual pair described above.
+The integration test calls the public Elexon API for 15 January 2026 and checks the forecast/actual pair for the 10:00 UTC delivery hour.
 
-## Docker
+## Docker Deployment
 
-From the repository root:
+Run the application from the repository root:
 
 ```bash
 docker compose up --build
 ```
 
-The backend is published on port 8000. Compose uses `backend/.env.example` for non-secret settings and checks `/api/v1/health`. The frontend image serves the built UI on port 8080 and proxies `/api` to the backend container. Outside Compose, the frontend image defaults to proxying `/api` to `https://wind-energy-forecasting-2c1x.onrender.com`; set `API_UPSTREAM` to change the API origin.
+- The backend is exposed on port `8000`.
+- The frontend is served on port `8080`.
+- Docker Compose configures the frontend proxy to communicate with the backend container.
+- The backend health check uses `/api/v1/health`.
+- The backend uses `backend/.env.example` for non-secret default settings.
 
-## Frontend
+Outside Docker Compose, the production frontend proxy defaults to:
 
-Node 22 is used for the Docker build. Local development needs a current Node release.
+`https://wind-energy-forecasting-2c1x.onrender.com`
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+Set `API_UPSTREAM` to change the upstream API origin.
 
-The app is at `http://127.0.0.1:5173`. Vite proxies `/api` to the Render backend. Copy `frontend/.env.example` to `frontend/.env` if you need to change the API base URL.
+## Verified Data Example
 
-```dotenv
-VITE_API_BASE_URL=/api/v1
-```
+For delivery at `2026-01-15T10:00:00Z` with a decision cutoff of `2026-01-14T13:00:00Z`, the backend was checked against live Elexon data.
 
-Leave that value relative. The Vite development proxy forwards API requests to the Render backend, and the production nginx proxy forwards them server-side, avoiding browser CORS requirements. Docker Compose routes to its local backend container.
+- Eligible forecast: `12362 MW`, published at `2026-01-14T11:30:00Z`.
+- Later revision: `13340 MW`, published at `2026-01-14T15:30:00Z`; excluded because it falls after the decision cutoff.
+- Actual generation readings: `9807 MW` at `10:00Z` and `11303 MW` at `10:30Z`.
+- Hourly actual generation returned by the backend: `10555 MW`.
 
-```bash
-cd frontend
-npm run build
-```
+This demonstrates how the backend preserves the information available at the decision time instead of using a forecast revision published later.
 
-There is no monthly accuracy trend. The API scores one delivery day per request and returns 24 hourly periods. FUELHH half-hours are averaged before they reach the frontend.
-
-## Layout
+## Project Structure
 
 ```text
-backend/app/config/          settings
-backend/app/core/            errors and dependencies
-backend/app/dto/             request and response models
-backend/app/helpers/         datetime helpers
-backend/app/routes.py        HTTP routes
-backend/app/service.py       forecast selection and accuracy
-backend/app/clients/         Elexon HTTP access
-frontend/                   Wind Intelligence UI
+.
+├── frontend/
+│   ├── src/                 React application
+│   ├── .env.example         Frontend environment configuration
+│   └── ...                  Vite and frontend configuration
+├── backend/
+│   ├── app/
+│   │   ├── config/          Application settings
+│   │   ├── core/            Errors and dependencies
+│   │   ├── dto/             Request and response models
+│   │   ├── helpers/         Datetime utilities
+│   │   ├── clients/         Elexon HTTP client
+│   │   ├── routes.py        HTTP endpoints
+│   │   ├── service.py       Forecast selection and accuracy calculations
+│   │   └── main.py          Application entry point
+│   ├── .env.example         Backend configuration
+│   └── requirements.txt     Python dependencies
+└── docker-compose.yml       Container orchestration
 ```
+
+The structure above describes the main application components; exact filenames may vary with the repository.
+
+Author: Purushottam Gurjar
