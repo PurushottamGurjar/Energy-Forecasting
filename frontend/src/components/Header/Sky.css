@@ -1,0 +1,148 @@
+.sky {
+  position: relative;
+  height: 92px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sky__cloud {
+  position: absolute;
+  width: 132px;
+  height: 58px;
+  filter: drop-shadow(0 4px 6px rgba(20, 40, 90, 0.14));
+  animation: sky-drift 22s ease-in-out infinite;
+}
+
+.sky__cloud--dark path {
+  fill: #3a4454;
+}
+
+.sky__cloud--one {
+  top: 8px;
+  animation-duration: 24s;
+}
+
+.sky__cloud--two {
+  top: 28px;
+  width: 96px;
+  height: 42px;
+  animation-duration: 31s;
+  animation-delay: -8s;
+}
+
+.sky__cloud--three {
+  top: 4px;
+  width: 78px;
+  height: 34px;
+  opacity: 0.9;
+  animation-duration: 18s;
+  animation-delay: -14s;
+}
+
+.sky__cloud--four {
+  top: 40px;
+  width: 112px;
+  height: 48px;
+  animation-duration: 27s;
+  animation-delay: -4s;
+}
+
+.sky__bolt {
+  position: absolute;
+  top: 10px;
+  width: 18px;
+  height: 32px;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(255, 225, 74, 0.85));
+  animation-name: sky-drift, sky-flash;
+  animation-duration: 16s, 3.6s;
+  animation-timing-function: ease-in-out, linear;
+  animation-iteration-count: infinite, infinite;
+}
+
+.sky__bolt--two {
+  top: 28px;
+  animation-duration: 21s, 2.8s;
+  animation-delay: -6s, -0.8s;
+}
+
+.sky__bolt--three {
+  top: 46px;
+  animation-duration: 18s, 4.2s;
+  animation-delay: -12s, -1.9s;
+}
+
+.sky__bolt--four {
+  top: 18px;
+  width: 14px;
+  height: 26px;
+  animation-duration: 24s, 3.1s;
+  animation-delay: -3s, -2.6s;
+}
+
+@keyframes sky-drift {
+  0%,
+  100% {
+    left: -12%;
+  }
+
+  50% {
+    left: 88%;
+  }
+}
+
+@keyframes sky-flash {
+  0%,
+  14%,
+  42%,
+  100% {
+    opacity: 0;
+  }
+
+  4% {
+    opacity: 1;
+  }
+
+  7% {
+    opacity: 0.2;
+  }
+
+  10% {
+    opacity: 0.95;
+  }
+
+  32% {
+    opacity: 1;
+  }
+
+  35% {
+    opacity: 0.15;
+  }
+
+  38% {
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky__cloud,
+  .sky__bolt {
+    animation: none;
+  }
+
+  .sky__cloud--one {
+    left: 8%;
+  }
+
+  .sky__cloud--two {
+    left: 42%;
+  }
+
+  .sky__cloud--three {
+    left: 62%;
+  }
+
+  .sky__cloud--four {
+    left: 82%;
+  }
+}

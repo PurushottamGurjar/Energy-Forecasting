@@ -1,0 +1,24 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  padding: 2px var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.status-badge--matched {
+  color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+.status-badge--missing {
+  color: var(--color-danger);
+  background: var(--color-danger-light);
+}
+
+.status-badge--partial {
+  color: var(--color-warning);
+  background: var(--color-warning-light);
+}

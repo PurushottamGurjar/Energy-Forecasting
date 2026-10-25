@@ -1,0 +1,27 @@
+.chart-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 0;
+  min-width: 0;
+}
+
+.chart-panel header {
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.chart-panel h2 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.chart-panel p {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.chart-panel__body {
+  height: var(--chart-height);
+  padding: var(--space-3) var(--space-2) var(--space-2);
+}
